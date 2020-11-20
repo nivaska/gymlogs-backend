@@ -12,6 +12,8 @@ const dotenv = require("dotenv");
 dotenv.config();
 const passportSetup = require("./src/config/passport-setup");
 const authRoutes = require("./src/routes/auth-routes");
+const dataRoutes = require("./src/routes/data-routes");
+
 const config = require("./src/config/config-vars");
 const app = express();
 
@@ -36,9 +38,7 @@ app.use(cookieParser());
 app.use(passport.initialize());
 app.use(passport.session());
 
-//setup rotes
-app.use("/auth", authRoutes);
-
+//setup routes
 const authCheck = (req, res, next) => {
   if (!req.user) {
     res.status(401).json({
@@ -48,6 +48,9 @@ const authCheck = (req, res, next) => {
     next();
   }
 };
+
+app.use("/auth", authRoutes);
+app.use("/data", authCheck, dataRoutes);
 
 app.get("/", (req, res) => {
   res.status(200).json({
@@ -60,10 +63,6 @@ app.use((req, res) => {
     message: "resource not found",
   });
 });
-
-// todo:
-// 1. handle default route
-// 2. handle 404 route (also in the UI)
 
 // config mongo connection
 console.log("connecting to mongo db");

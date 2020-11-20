@@ -12,10 +12,13 @@ const userSchema = new Schema({
     type: String,
     required: [true, "Email is required"],
   },
-  profileImageUrl: {
+  password: {
     type: String,
   },
   provider: {
+    type: String,
+  },
+  profileImageUrl: {
     type: String,
   },
   created: {

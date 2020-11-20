@@ -1,6 +1,8 @@
 const passport = require("passport");
 const User = require("../models/user-model");
 const GoogleStrategy = require("passport-google-oauth2").Strategy;
+const LocalStrategy = require("passport-local").Strategy;
+const bcrypt = require("bcrypt");
 
 passport.serializeUser((user, done) => {
   done(null, user.id);
@@ -12,7 +14,7 @@ passport.deserializeUser((id, done) => {
       done(null, user);
     })
     .catch((e) => {
-      done(new Error("Failed to deserialize an user"));
+      done(new Error("Failed to deserialize user"));
     });
 });
 
@@ -32,10 +34,10 @@ passport.use(
 
         if (!currentUser) {
           const newUser = await new User({
+            email: profile.email,
             name: profile.displayName,
             userId: profile.id,
             profileImageUrl: profile.picture,
-            email: profile.email,
             provider: profile.provider,
             created: new Date(),
           }).save();
@@ -46,7 +48,31 @@ passport.use(
         }
         done(null, currentUser);
       } catch (err) {
-        done(null, false, "Error Occured");
+        return done(null, false, { message: "Error occured." });
+      }
+    }
+  )
+);
+
+passport.use(
+  new LocalStrategy(
+    {
+      usernameField: "email",
+      passwordField: "password",
+    },
+    async (email, password, done) => {
+      const user = await User.findOne({
+        email: email,
+      });
+
+      if (!user) {
+        return done(null, false, { message: "User not found." });
+      }
+
+      if (bcrypt.compareSync(password, user.password)) {
+        done(null, user);
+      } else {
+        return done(null, false, { message: "Incorrect password." });
       }
     }
   )
