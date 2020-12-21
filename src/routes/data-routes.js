@@ -6,4 +6,11 @@ router.get("/test", (req, res) => {
   });
 });
 
+router.get("/profile", (req, res) => {
+  res.json({
+    name: req.user.name,
+    image: req.user.profileImageUrl,
+  });
+});
+
 module.exports = router;

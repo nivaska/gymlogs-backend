@@ -15,10 +15,8 @@ router.get("/success", (req, res) => {
 });
 
 router.get("/failure", (req, res) => {
-  res.status(401).json({
-    success: false,
-    message: "Authentication failed",
-  });
+  res.statusMessage = "Authentication failed.";
+  res.status(401).end();
 });
 
 router.get("/logout", (req, res) => {
@@ -44,17 +42,19 @@ router.get(
 router.post(
   "/login",
   passport.authenticate("local", {
-    successRedirect: "/auth/success",
     failureRedirect: "/auth/failure",
-  })
+  }),
+  function (req, res) {
+    res.json({
+      authenticated: true,
+    });
+  }
 );
 
 router.post("/register", async (req, res, next) => {
-  if (!req.body.email || !req.body.password) {
-    res.status(500).json({
-      accountCreated: false,
-      message: "invalid information",
-    });
+  if (!req.body.email || !req.body.password || !req.body.name) {
+    res.statusMessage = "Incomplete information.";
+    res.status(400).end();
     return;
   }
 
@@ -63,10 +63,8 @@ router.post("/register", async (req, res, next) => {
   });
 
   if (user) {
-    res.status(500).json({
-      accountCreated: false,
-      message: "user already exists",
-    });
+    res.statusMessage = "The email account is already registered.";
+    res.status(400).end();
     return;
   }
 
@@ -91,9 +89,8 @@ router.post("/register", async (req, res, next) => {
     })
     .catch((err) => {
       console.log(err);
-      res.status(500).json({
-        accountCreated: false,
-      });
+      res.statusMessage = "An error occured while creating the account.";
+      res.status(500).end();
     });
 });
 
