@@ -1,7 +1,7 @@
 const passport = require("passport");
 const User = require("../models/user-model");
-const GoogleStrategy = require("passport-google-oauth2").Strategy;
 const LocalStrategy = require("passport-local").Strategy;
+var GoogleTokenStrategy = require("passport-google-id-token");
 const bcrypt = require("bcrypt");
 
 passport.serializeUser((user, done) => {
@@ -19,42 +19,6 @@ passport.deserializeUser((id, done) => {
 });
 
 passport.use(
-  new GoogleStrategy(
-    {
-      clientID: process.env.GOOGLE_CLIENT_ID,
-      clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-      callbackURL: `${process.env.HOST_URI}/auth/google/callback`,
-      passReqToCallback: true,
-    },
-    async function (request, accessToken, refreshToken, profile, done) {
-      try {
-        const currentUser = await User.findOne({
-          userId: profile.id,
-        });
-
-        if (!currentUser) {
-          const newUser = await new User({
-            email: profile.email,
-            name: profile.displayName,
-            userId: profile.id,
-            profileImageUrl: profile.picture,
-            provider: profile.provider,
-            created: new Date(),
-          }).save();
-
-          if (newUser) {
-            done(null, newUser);
-          }
-        }
-        done(null, currentUser);
-      } catch (err) {
-        return done(null, false, { message: "Error occured." });
-      }
-    }
-  )
-);
-
-passport.use(
   new LocalStrategy(
     {
       usernameField: "email",
@@ -66,14 +30,48 @@ passport.use(
       });
 
       if (!user) {
-        return done(null, false, { message: "User not found." });
+        return done(null, false, { message: "User Not Found." });
       }
 
       if (bcrypt.compareSync(password, user.password)) {
         done(null, user);
       } else {
-        return done(null, false, { message: "Incorrect password." });
+        return done(null, false, { message: "Incorrect Password." });
       }
+    }
+  )
+);
+
+passport.use(
+  new GoogleTokenStrategy(
+    {
+      clientID: process.env.GOOGLE_CLIENT_ID,
+    },
+    async (parsedToken, googleId, done) => {
+      const user = await User.findOne({
+        email: parsedToken.payload.email,
+      });
+
+      if (user) return done(null, user);
+
+      const newUser = new User({
+        userId: googleId,
+        email: parsedToken.payload.email,
+        name: parsedToken.payload.name,
+        photo: parsedToken.payload.picture,
+        provider: "google",
+        created: new Date(),
+      });
+
+      newUser
+        .save()
+        .then((result) => {
+          return done(null, newUser);
+        })
+        .catch((err) => {
+          console.log(err)
+          return done(err, false);
+        });
     }
   )
 );

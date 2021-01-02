@@ -1,5 +1,6 @@
 const router = require("express").Router();
 const passport = require("passport");
+
 const userModel = require("../models/user-model");
 const bcrypt = require("bcrypt");
 const config = require("../config/config-vars");
@@ -26,17 +27,19 @@ router.get("/logout", (req, res) => {
   });
 });
 
-router.get(
+router.post(
   "/google",
-  passport.authenticate("google", { scope: ["email", "profile"] })
-);
-
-router.get(
-  "/google/callback",
-  passport.authenticate("google", {
-    successRedirect: "/auth/success",
-    failureRedirect: "/auth/failure",
-  })
+  passport.authenticate("google-id-token"),
+  function (req, res) {
+    if (req.user) {
+      res.json({
+        authenticated: true,
+      });
+    } else {
+      res.statusMessage = "Authentication failed.";
+      res.status(401).end();
+    }
+  }
 );
 
 router.post(
@@ -54,7 +57,7 @@ router.post(
 router.post("/register", async (req, res, next) => {
   if (!req.body.email || !req.body.password || !req.body.name) {
     res.statusMessage = "Incomplete information.";
-    res.status(400).end();
+    res.status(401).end();
     return;
   }
 
@@ -64,7 +67,7 @@ router.post("/register", async (req, res, next) => {
 
   if (user) {
     res.statusMessage = "The email account is already registered.";
-    res.status(400).end();
+    res.status(401).end();
     return;
   }
 

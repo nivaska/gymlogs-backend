@@ -18,7 +18,7 @@ const userSchema = new Schema({
   provider: {
     type: String,
   },
-  profileImageUrl: {
+  photo: {
     type: String,
   },
   created: {
